@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { globSync } from "glob";
 import { convert } from "imagemagick";
 import { parse } from "path";
@@ -11,7 +11,12 @@ for (const sprite of sprites) {
   const number = parse(sprite).name;
   const paddedNumber = getPaddedNumber(number);
   const name = getName(number);
+
   const output = `emoji/pokemon-${paddedNumber}-${name}.png`;
+  if (existsSync(output)) {
+    continue;
+  }
+
   convert([sprite, "-trim", "+repage", output], convertHandler);
 }
 
