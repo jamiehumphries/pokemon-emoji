@@ -32,7 +32,7 @@ function getName(number) {
   const apiFilepath = `api-data/data/api/v2/pokemon/${number}/index.json`;
   const content = readFileSync(apiFilepath);
   const json = JSON.parse(content);
-  return json.name;
+  return json.species.name;
 }
 
 function convertHandler(err, stdout) {
