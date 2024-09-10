@@ -14,7 +14,8 @@ const sprites = readApiJson("/api/v2/pokemon-species/")
       const image = `sprites/sprites/pokemon/${imageNumber}.png`;
       return { name, formName, number, image };
     });
-  });
+  })
+  .filter(({ name }) => name.indexOf("-totem") === -1);
 
 for (const sprite of sprites) {
   const { name, formName, number, image } = sprite;
