@@ -1,38 +1,62 @@
 import { existsSync, readFileSync } from "fs";
-import { globSync } from "glob";
 import { convert } from "imagemagick";
 import { parse } from "path";
 
-const sprites = globSync("sprites/sprites/pokemon/*.png").filter((path) =>
-  path.match(/\/[1-9]\d{0,3}\.png$/g)
-);
+const sprites = readApiJson("/api/v2/pokemon-species/")
+  .results.map(({ url }) => readApiJson(url))
+  .flatMap((species) => {
+    const number = species.pokedex_numbers[0].entry_number;
+    return species.varieties.map(({ pokemon }, i) => {
+      const speciesName = species.name;
+      const formName = pokemon.name;
+      const name = i === 0 ? speciesName : formName;
+      const imageNumber = pokemon.url.split("/")[4];
+      const image = `sprites/sprites/pokemon/${imageNumber}.png`;
+      return { name, formName, number, image };
+    });
+  });
 
 for (const sprite of sprites) {
-  const number = parse(sprite).name;
+  const { name, formName, number, image } = sprite;
   const paddedNumber = getPaddedNumber(number);
-  const name = getName(number);
 
-  const output = `emoji/pokemon-${paddedNumber}-${name}.png`;
+  const directory = parse(image).name.length <= 4 ? "emoji" : "emoji/forms";
+  const emojiName = getEmojiName(paddedNumber, name);
+  const filename = `${emojiName}.png`;
+  const output = `${directory}/${filename}`;
+
+  if (name !== formName) {
+    const formEmojiName = getEmojiName(paddedNumber, formName);
+    console.log(`Create alias for ${formEmojiName} → ${emojiName}`);
+  }
+
   if (existsSync(output)) {
     continue;
   }
 
-  convert([sprite, "-trim", "+repage", output], convertHandler);
+  if (existsSync(image)) {
+    convert([image, "-trim", "+repage", output], convertHandler);
+  } else {
+    console.error(`No sprite for '${name}'`);
+  }
+}
+
+function readApiJson(path) {
+  const filepath = `api-data/data${path}index.json`;
+  const content = readFileSync(filepath);
+  return JSON.parse(content);
 }
 
 function getPaddedNumber(number) {
-  let paddedNumber = number;
+  let paddedNumber = number.toString();
   while (paddedNumber.length < 3) {
     paddedNumber = "0" + paddedNumber;
   }
   return paddedNumber;
 }
 
-function getName(number) {
-  const apiFilepath = `api-data/data/api/v2/pokemon/${number}/index.json`;
-  const content = readFileSync(apiFilepath);
-  const json = JSON.parse(content);
-  return json.species.name;
+function getEmojiName(paddedNumber, name) {
+  return `pokemon-${paddedNumber}-${name}`;
 }
 
 function convertHandler(err, stdout) {
