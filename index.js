@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { convert } from "imagemagick";
 
 const sprites = readApiJson("/api/v2/pokemon-form/")
@@ -28,12 +28,17 @@ const sprites = readApiJson("/api/v2/pokemon-form/")
   .filter((sprite) => sprite !== null)
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
+const outputDirectory = "emoji";
+const newEmojiDirectory = `${outputDirectory}/new_${+new Date()}`;
+mkdirSync(newEmojiDirectory);
+
 for (const sprite of sprites) {
   const { name, formName, number, image } = sprite;
   const paddedNumber = getPaddedNumber(number);
 
   const emojiName = getEmojiName(paddedNumber, name);
-  const output = `emoji/${emojiName}.png`;
+  const fileName = `${emojiName}.png`;
+  const output = `${outputDirectory}/${fileName}`;
 
   if (existsSync(output)) {
     continue;
@@ -45,7 +50,15 @@ for (const sprite of sprites) {
   }
 
   if (existsSync(image)) {
-    convert([image, "-trim", "+repage", output], convertHandler);
+    convert([image, "-trim", "+repage", output], (err, stdout) => {
+      if (err) {
+        throw err;
+      }
+      if (stdout) {
+        console.log(stdout);
+      }
+      copyFileSync(output, `${newEmojiDirectory}/${fileName}`);
+    });
   } else {
     console.error(`Could not find sprite for '${name}'`);
   }
