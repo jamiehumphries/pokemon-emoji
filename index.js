@@ -6,10 +6,11 @@ const sprites = readApiJson("/api/v2/pokemon-species/")
   .results.map(({ url }) => readApiJson(url))
   .flatMap((species) => {
     const number = species.pokedex_numbers[0].entry_number;
-    return species.varieties.map(({ pokemon }, i) => {
+    return species.varieties.map((variety, i) => {
+      const { is_default: isDefault, pokemon } = variety;
       const speciesName = species.name;
       const formName = pokemon.name;
-      const name = i === 0 ? speciesName : formName;
+      const name = isDefault ? speciesName : formName;
       const imageNumber = pokemon.url.split("/")[4];
       const image = `sprites/sprites/pokemon/${imageNumber}.png`;
       return { name, formName, number, image };
