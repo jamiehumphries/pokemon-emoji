@@ -1,6 +1,5 @@
-import { existsSync, readFileSync, rmSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { convert } from "imagemagick";
-import { parse } from "path";
 
 const sprites = readApiJson("/api/v2/pokemon-form/")
   .results.map(({ url }) => readApiJson(url))
@@ -30,13 +29,11 @@ const sprites = readApiJson("/api/v2/pokemon-form/")
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
 for (const sprite of sprites) {
-  const { name, formName, isDefault, number, image } = sprite;
+  const { name, formName, number, image } = sprite;
   const paddedNumber = getPaddedNumber(number);
 
-  const directory = isDefault ? "emoji" : "emoji/forms";
   const emojiName = getEmojiName(paddedNumber, name);
-  const filename = `${emojiName}.png`;
-  const output = `${directory}/${filename}`;
+  const output = `emoji/${emojiName}.png`;
 
   if (existsSync(output)) {
     continue;
