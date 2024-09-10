@@ -1,45 +1,56 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, rmSync } from "fs";
 import { convert } from "imagemagick";
 import { parse } from "path";
 
-const sprites = readApiJson("/api/v2/pokemon-species/")
+const sprites = readApiJson("/api/v2/pokemon-form/")
   .results.map(({ url }) => readApiJson(url))
-  .flatMap((species) => {
+  .flatMap((form) => {
+    const pokemon = readApiJson(form.pokemon.url);
+    const species = readApiJson(pokemon.species.url);
+
     const number = species.pokedex_numbers[0].entry_number;
-    return species.varieties.map((variety, i) => {
-      const { is_default: isDefault, pokemon } = variety;
-      const speciesName = species.name;
-      const formName = pokemon.name;
-      const name = isDefault ? speciesName : formName;
-      const imageNumber = pokemon.url.split("/")[4];
-      const image = `sprites/sprites/pokemon/${imageNumber}.png`;
-      return { name, formName, number, image };
-    });
+
+    const isDefault = pokemon.is_default && form.is_default;
+    const speciesName = species.name;
+    const formName = form.name;
+    const name = isDefault ? speciesName : formName;
+
+    const sprite = findSprite(form, pokemon, species);
+    if (!sprite) {
+      return null;
+    }
+    const image = sprite.replace(
+      "https://raw.githubusercontent.com/PokeAPI/sprites/master",
+      "sprites"
+    );
+
+    return { name, formName, isDefault, number, image };
   })
+  .filter((sprite) => sprite !== null)
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
 for (const sprite of sprites) {
-  const { name, formName, number, image } = sprite;
+  const { name, formName, isDefault, number, image } = sprite;
   const paddedNumber = getPaddedNumber(number);
 
-  const directory = parse(image).name.length <= 4 ? "emoji" : "emoji/forms";
+  const directory = isDefault ? "emoji" : "emoji/forms";
   const emojiName = getEmojiName(paddedNumber, name);
   const filename = `${emojiName}.png`;
   const output = `${directory}/${filename}`;
+
+  if (existsSync(output)) {
+    continue;
+  }
 
   if (name !== formName) {
     const formEmojiName = getEmojiName(paddedNumber, formName);
     console.log(`Create alias for ${formEmojiName} → ${emojiName}`);
   }
 
-  if (existsSync(output)) {
-    continue;
-  }
-
   if (existsSync(image)) {
     convert([image, "-trim", "+repage", output], convertHandler);
   } else {
-    console.error(`No sprite for '${name}'`);
+    console.error(`Could not find sprite for '${name}'`);
   }
 }
 
@@ -47,6 +58,18 @@ function readApiJson(path) {
   const filepath = `api-data/data${path}index.json`;
   const content = readFileSync(filepath);
   return JSON.parse(content);
+}
+
+function findSprite(form, pokemon, species) {
+  if (form.sprites.front_default) {
+    return form.sprites.front_default;
+  }
+
+  const isSpeciesVariety =
+    species.varieties.find(({ pokemon }) => pokemon.name === form.name) !==
+    undefined;
+
+  return isSpeciesVariety ? pokemon.sprites.front_default : null;
 }
 
 function getPaddedNumber(number) {
