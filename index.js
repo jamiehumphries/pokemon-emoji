@@ -1,4 +1,11 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import {
+  appendFileSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "fs";
 import { convert } from "imagemagick";
 
 const forms = readApiJson("/api/v2/pokemon-form/")
@@ -40,7 +47,9 @@ const forms = readApiJson("/api/v2/pokemon-form/")
 const outputDirectory = "emoji";
 const timestamp = new Date().toISOString().replace(/[^\d]/g, "").slice(0, -3);
 const newEmojiDirectory = `${outputDirectory}/new-${timestamp}`;
+const newAliasesFile = `${newEmojiDirectory}/aliases.txt`;
 mkdirSync(newEmojiDirectory);
+writeFileSync(newAliasesFile, "");
 
 for (const form of forms) {
   const { name, fullName, number, image } = form;
@@ -56,7 +65,9 @@ for (const form of forms) {
 
   if (name !== fullName) {
     const formEmojiName = getEmojiName(paddedNumber, fullName);
-    console.log(`Create alias for ${formEmojiName} → ${emojiName}`);
+    const alias = `${formEmojiName} → ${emojiName}`;
+    console.log(`Create alias ${alias}`);
+    appendFileSync(newAliasesFile, `${alias}\n`);
   }
 
   if (existsSync(image)) {
