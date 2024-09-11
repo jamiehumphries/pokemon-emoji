@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from "fs";
 import { convert } from "imagemagick";
 
-const sprites = readApiJson("/api/v2/pokemon-form/")
+const forms = readApiJson("/api/v2/pokemon-form/")
   .results.map(({ url }) => readApiJson(url))
   .flatMap((form) => {
     const pokemon = readApiJson(form.pokemon.url);
@@ -11,20 +11,30 @@ const sprites = readApiJson("/api/v2/pokemon-form/")
 
     const isDefault = pokemon.is_default && form.is_default;
     const speciesName = species.name;
-    const formName = form.name;
-    const name = isDefault ? speciesName : formName;
+    const fullName = form.name;
+    const name = isDefault ? speciesName : fullName;
 
-    const sprite = findSprite(form, pokemon, species);
-    if (!sprite) {
-      return [];
-    }
-    const image = sprite.replace(
-      "https://raw.githubusercontent.com/PokeAPI/sprites/master",
-      "sprites"
-    );
+    const spriteTypes = ["default"];
 
-    return [{ name, formName, isDefault, number, image }];
+    return spriteTypes.map((type) => {
+      const sprite = findSpriteImage(form, pokemon, species, type);
+      if (!sprite) {
+        return null;
+      }
+      const image = sprite.replace(
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master",
+        "sprites"
+      );
+      return {
+        name: modifiedName(name, type),
+        fullName: modifiedName(fullName, type),
+        isDefault,
+        number,
+        image,
+      };
+    });
   })
+  .filter((form) => !!form)
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
 const outputDirectory = "emoji";
@@ -32,8 +42,8 @@ const timestamp = new Date().toISOString().replace(/[^\d]/g, "").slice(0, -3);
 const newEmojiDirectory = `${outputDirectory}/new-${timestamp}`;
 mkdirSync(newEmojiDirectory);
 
-for (const sprite of sprites) {
-  const { name, formName, number, image } = sprite;
+for (const form of forms) {
+  const { name, fullName, number, image } = form;
   const paddedNumber = getPaddedNumber(number);
 
   const emojiName = getEmojiName(paddedNumber, name);
@@ -44,8 +54,8 @@ for (const sprite of sprites) {
     continue;
   }
 
-  if (name !== formName) {
-    const formEmojiName = getEmojiName(paddedNumber, formName);
+  if (name !== fullName) {
+    const formEmojiName = getEmojiName(paddedNumber, fullName);
     console.log(`Create alias for ${formEmojiName} → ${emojiName}`);
   }
 
@@ -70,16 +80,23 @@ function readApiJson(path) {
   return JSON.parse(content);
 }
 
-function findSprite(form, pokemon, species) {
-  if (form.sprites.front_default) {
-    return form.sprites.front_default;
+function findSpriteImage(form, pokemon, species, type) {
+  const typeProperty = `front_${type}`;
+
+  const formImage = form.sprites[typeProperty];
+  if (formImage) {
+    return formImage;
   }
 
   const isSpeciesVariety =
     species.varieties.find(({ pokemon }) => pokemon.name === form.name) !==
     undefined;
 
-  return isSpeciesVariety ? pokemon.sprites.front_default : null;
+  return isSpeciesVariety ? pokemon.sprites[typeProperty] : null;
+}
+
+function modifiedName(baseName, type) {
+  return type === "default" ? baseName : `${baseName}-${type}`;
 }
 
 function getPaddedNumber(number) {
