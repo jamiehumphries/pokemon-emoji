@@ -29,7 +29,8 @@ const sprites = readApiJson("/api/v2/pokemon-form/")
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
 const outputDirectory = "emoji";
-const newEmojiDirectory = `${outputDirectory}/new_${+new Date()}`;
+const timestamp = new Date().toISOString().replace(/[^\d]/g, "").slice(0, -3);
+const newEmojiDirectory = `${outputDirectory}/new-${timestamp}`;
 mkdirSync(newEmojiDirectory);
 
 for (const sprite of sprites) {
