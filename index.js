@@ -21,7 +21,7 @@ const forms = readApiJson("/api/v2/pokemon-form/")
     const fullName = form.name;
     const name = isDefault ? speciesName : fullName;
 
-    const spriteTypes = ["default"];
+    const spriteTypes = ["default", "female"];
 
     return spriteTypes.map((type) => {
       const sprite = findSpriteImage(form, pokemon, species, type);
