@@ -16,16 +16,15 @@ const sprites = readApiJson("/api/v2/pokemon-form/")
 
     const sprite = findSprite(form, pokemon, species);
     if (!sprite) {
-      return null;
+      return [];
     }
     const image = sprite.replace(
       "https://raw.githubusercontent.com/PokeAPI/sprites/master",
       "sprites"
     );
 
-    return { name, formName, isDefault, number, image };
+    return [{ name, formName, isDefault, number, image }];
   })
-  .filter((sprite) => sprite !== null)
   .filter(({ name }) => name.indexOf("-totem") === -1);
 
 const outputDirectory = "emoji";
