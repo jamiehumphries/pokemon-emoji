@@ -50,7 +50,7 @@ for (const sprite of sprites) {
   }
 
   if (existsSync(image)) {
-    convert([image, "-trim", "+repage", output], (err, stdout) => {
+    convert([image, "-trim", "+repage", "-strip", output], (err, stdout) => {
       if (err) {
         throw err;
       }
@@ -92,13 +92,4 @@ function getPaddedNumber(number) {
 
 function getEmojiName(paddedNumber, name) {
   return `pokemon-${paddedNumber}-${name}`;
-}
-
-function convertHandler(err, stdout) {
-  if (err) {
-    throw err;
-  }
-  if (stdout) {
-    console.log(stdout);
-  }
 }
