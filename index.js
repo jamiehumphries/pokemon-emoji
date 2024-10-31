@@ -53,9 +53,8 @@ writeFileSync(newAliasesFile, "");
 
 for (const form of forms) {
   const { name, fullName, number, image } = form;
-  const paddedNumber = getPaddedNumber(number);
 
-  const emojiName = getEmojiName(paddedNumber, name);
+  const emojiName = getEmojiName(number, name);
   const fileName = `${emojiName}.png`;
   const output = `${outputDirectory}/${fileName}`;
 
@@ -64,7 +63,7 @@ for (const form of forms) {
   }
 
   if (name !== fullName) {
-    const formEmojiName = getEmojiName(paddedNumber, fullName);
+    const formEmojiName = getEmojiName(number, fullName);
     const alias = `${formEmojiName} → ${emojiName}`;
     console.log(`Create alias ${alias}`);
     appendFileSync(newAliasesFile, `${alias}\n`);
@@ -112,14 +111,7 @@ function modifiedName(baseName, type) {
     : `${baseName}-${type.replaceAll("_", "-")}`;
 }
 
-function getPaddedNumber(number) {
-  let paddedNumber = number.toString();
-  while (paddedNumber.length < 3) {
-    paddedNumber = "0" + paddedNumber;
-  }
-  return paddedNumber;
-}
-
-function getEmojiName(paddedNumber, name) {
+function getEmojiName(number, name) {
+  const paddedNumber = number.toString().padStart(3, "0");
   return `pokemon-${paddedNumber}-${name}`;
 }
